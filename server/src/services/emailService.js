@@ -44,19 +44,9 @@ const ensureInboxJob = async () => {
 };
 
 const analyzeResume = async (text) => {
-  const prompt = `Ты HR-ассистент. Проанализируй текст резюме и верни ТОЛЬКО JSON:
-{
-  "name": "Имя Фамилия",
-  "email": "email@example.com",
-  "score": 0-100,
-  "skills": ["...", "..."],
-  "summary": "краткое описание",
-  "experience_years": 0
-}
-Текст резюме:
-${text}`;
-
-  if (useGeminiMock) {
+  // 1. Если API ключ не задан, используем мок
+  if (useGeminiMock || !gemini) {
+    log("Используется Mock данные (Gemini не настроен)");
     return {
       name: "Mock Candidate",
       email: "mock@example.com",
@@ -67,16 +57,44 @@ ${text}`;
     };
   }
 
+  const prompt = `Ты HR-ассистент. Проанализируй текст резюме и верни ТОЛЬКО JSON:
+  {
+    "name": "Имя Фамилия",
+    "email": "email@example.com",
+    "score": 0-100,
+    "skills": ["...", "..."],
+    "summary": "краткое описание",
+    "experience_years": 0
+  }
+  Текст резюме:
+  ${text}`;
+
   try {
-    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // ВАЖНО: Добавляем apiVersion: 'v1'
+    const model = gemini.getGenerativeModel(
+      { model: "gemini-1.5-flash" },
+      { apiVersion: "v1" }
+    );
+
     const result = await model.generateContent(prompt);
-    let raw = result.response.text().trim();
-    raw = raw.replace(/```json|```/gi, "").trim(); // strip markdown fences if present
+    const response = await result.response;
+    let raw = response.text().trim();
+
+    // Очистка от markdown и лишнего текста
+    raw = raw.replace(/```json|```/gi, "").trim();
     const jsonString = raw.match(/\{[\s\S]*\}/)?.[0] || raw;
+
     return JSON.parse(jsonString);
   } catch (err) {
     log("Gemini parse error:", err?.message || err);
-    throw err;
+    // Если ошибка API, возвращаем хотя бы базовые данные, чтобы воркер не падал
+    return {
+      name: "Parsing Error",
+      email: "error@example.com",
+      score: 0,
+      skills: [],
+      summary: "Error",
+    };
   }
 };
 
