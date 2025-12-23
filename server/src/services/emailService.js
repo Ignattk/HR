@@ -35,19 +35,20 @@ const getMailTransport = () => {
     return null;
   }
   mailTransport = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
+    service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    pool: true,
+    maxConnections: 1,
+    maxMessages: Infinity,
+    connectionTimeout: 20_000,
+    greetingTimeout: 20_000,
+    socketTimeout: 30_000,
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 10_000,
   });
   return mailTransport;
 };
@@ -104,6 +105,7 @@ const sendStatusEmail = async (candidateEmail, status, candidateName) => {
   );
 
   console.log("Попытка отправки письма на:", candidateEmail);
+  console.log(">>> Начинаю процесс отправки письма...");
 
   try {
     await transport.sendMail({
