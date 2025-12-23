@@ -1,50 +1,75 @@
 import api from "./axios";
 
+const handleApiError = (label, error) => {
+  console.error(`${label} failed:`, error?.response?.data || error?.message || error);
+  throw error;
+};
+
 // Jobs API
 export const getJobs = async () => {
-  const response = await api.get("/jobs");
-  return response.data;
+  try {
+    const response = await api.get("/jobs");
+    return response.data;
+  } catch (error) {
+    handleApiError("getJobs", error);
+  }
 };
 
 export const createJob = async (jobData) => {
-  // Transform frontend format to backend format
-  const backendJobData = {
-    title: jobData.title,
-    description: jobData.description,
-    skills: {
-      required: jobData.requiredSkills || [],
-      optional: jobData.optionalSkills || [],
-    },
-    minExperience: jobData.minExperience || 0,
-    createdBy: "000000000000000000000000", // Placeholder - should be replaced with actual user ID
-  };
-  const response = await api.post("/jobs", backendJobData);
-  return response.data;
+  try {
+    // Transform frontend format to backend format
+    const backendJobData = {
+      title: jobData.title,
+      description: jobData.description,
+      skills: {
+        required: jobData.requiredSkills || [],
+        optional: jobData.optionalSkills || [],
+      },
+      minExperience: jobData.minExperience || 0,
+      createdBy: "000000000000000000000000", // Placeholder - should be replaced with actual user ID
+    };
+    const response = await api.post("/jobs", backendJobData);
+    return response.data;
+  } catch (error) {
+    handleApiError("createJob", error);
+  }
 };
 
 // Candidates API
 export const getAllCandidates = async () => {
-  const response = await api.get("/candidates");
-  return response.data;
+  try {
+    const response = await api.get("/candidates");
+    return response.data;
+  } catch (error) {
+    handleApiError("getAllCandidates", error);
+  }
 };
 
 export const getCandidatesByJob = async (jobId) => {
-  const response = await api.get(`/jobs/${jobId}/candidates`);
-  return response.data;
+  try {
+    const response = await api.get(`/jobs/${jobId}/candidates`);
+    return response.data;
+  } catch (error) {
+    handleApiError("getCandidatesByJob", error);
+  }
 };
 
 export const updateCandidateStage = async (candidateId, stage) => {
-  // Transform frontend stage format to backend format
-  const stageMap = {
-    Draft: "DRAFT",
-    Interview: "INTERVIEW",
-    Rejected: "REJECTED",
-  };
-  const backendStage = stageMap[stage] || stage.toUpperCase();
-  const response = await api.patch(`/candidates/${candidateId}`, {
-    stage: backendStage,
-  });
-  return response.data;
+  try {
+    // Transform frontend stage format to backend format
+    const stageMap = {
+      Draft: "DRAFT",
+      Interview: "INTERVIEW",
+      Rejected: "REJECTED",
+    };
+    const backendStage = stageMap[stage] || stage.toUpperCase();
+    const response = await api.patch(`/candidates/${candidateId}`, {
+      stage: backendStage,
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError("updateCandidateStage", error);
+  }
 };
 
 // Data transformation helpers

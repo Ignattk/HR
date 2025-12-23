@@ -10,12 +10,18 @@ const app = express();
 app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 
 app.use(express.json());
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://hr-nine-sable.vercel.app",
+  "http://localhost:5173",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Specific origin instead of wildcard
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // Allow credentials if needed in the future
+    credentials: true,
   })
 );
 
@@ -27,7 +33,7 @@ app.get("/", (req, res) => {
   res.send("Backend is running!");
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
