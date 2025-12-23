@@ -79,6 +79,14 @@ ${text}`;
   }
 };
 
+const streamToBuffer = async (stream) =>
+  new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on("data", (chunk) => chunks.push(chunk));
+    stream.on("end", () => resolve(Buffer.concat(chunks)));
+    stream.on("error", reject);
+  });
+
 const extractPdfText = async (attachments) => {
   for (const attachment of attachments || []) {
     console.log(
@@ -98,7 +106,13 @@ const extractPdfText = async (attachments) => {
     const isPdf = contentType.includes("pdf") || filename.endsWith(".pdf");
 
     if (isPdf) {
-      const buffer = attachment.content;
+      let buffer = attachment.content;
+      if (!buffer && attachment.contentStream) {
+        buffer = await streamToBuffer(attachment.contentStream);
+      }
+      if (buffer && buffer.readable) {
+        buffer = await streamToBuffer(buffer);
+      }
       if (buffer) {
         const parsed = await pdfParse(buffer);
         return parsed.text;
@@ -113,10 +127,17 @@ const processMessage = async (message) => {
   const fromAddress =
     parsed.from?.value?.[0]?.address || parsed.from?.text || "unknown";
 
+  console.log("Всего вложений обнаружено:", parsed.attachments?.length || 0);
+  if (!parsed.attachments || parsed.attachments.length === 0) {
+    console.log("Структура parsed без вложений:", parsed);
+    // старое письмо без вложений — пометим как прочитанное
+    return { handled: false, markSeen: true };
+  }
+
   const pdfText = await extractPdfText(parsed.attachments);
   if (!pdfText) {
     log("⚪️ Письмо без PDF, пропускаю");
-    return null;
+    return { handled: false, markSeen: false };
   }
 
   log(`📄 Найдено резюме от ${fromAddress}`);
@@ -138,7 +159,7 @@ const processMessage = async (message) => {
   });
 
   await candidate.save();
-  return candidate;
+  return { handled: true, markSeen: true };
 };
 
 const pollInbox = async () => {
@@ -166,11 +187,18 @@ const pollInbox = async () => {
     flags: true,
     uid: true,
   })) {
+    console.log(
+      "Обрабатываю письмо UID:",
+      message.uid,
+      "Тема:",
+      message.envelope?.subject
+    );
     try {
-      await processMessage(message);
-      if (message.uid) {
+      const result = await processMessage(message);
+      if (result?.markSeen && message.uid) {
         await client.messageFlagsAdd({ uid: message.uid }, ["\\Seen"]);
       }
+      continue;
     } catch (err) {
       log("Ошибка обработки письма:", err?.message || err);
     }
