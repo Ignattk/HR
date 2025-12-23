@@ -62,7 +62,7 @@ const analyzeResume = async (text) => {
 
   try {
     // Пробуем gemini-pro, она наиболее совместима с v1
-    const model = gemini.getGenerativeModel({ model: "gemini-pro" });
+    const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
