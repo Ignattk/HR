@@ -81,10 +81,23 @@ ${text}`;
 
 const extractPdfText = async (attachments) => {
   for (const attachment of attachments || []) {
-    if (
-      attachment.contentType?.toLowerCase().includes("pdf") ||
-      attachment.filename?.toLowerCase().endsWith(".pdf")
-    ) {
+    console.log(
+      "Найдено вложение:",
+      attachment.filename,
+      "Тип:",
+      attachment.contentType
+    );
+
+    const contentType = attachment.contentType
+      ? attachment.contentType.toLowerCase()
+      : "";
+    const filename = attachment.filename
+      ? attachment.filename.toLowerCase()
+      : "";
+
+    const isPdf = contentType.includes("pdf") || filename.endsWith(".pdf");
+
+    if (isPdf) {
       const buffer = attachment.content;
       if (buffer) {
         const parsed = await pdfParse(buffer);
@@ -192,4 +205,3 @@ const startEmailService = () => {
 };
 
 module.exports = { startEmailService };
-
