@@ -1,0 +1,81 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --surface-2: #eef1f7;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --accent-2: #2563eb;
+  }
+
+  .theme-dark {
+    --bg: #0b1220;
+    --surface: #111827;
+    --surface-2: #131c2c;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --border: #1f2937;
+    --accent: #38bdf8;
+    --accent-2: #38bdf8;
+  }
+
+  * {
+    font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: var(--surface-2);
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    box-shadow:
+      0 20px 70px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(8px);
+  }
+
+  .panel-3d {
+    transform-style: preserve-3d;
+    perspective: 1200px;
+  }
+
+  .panel-3d:hover {
+    transform: translateY(-4px) scale(1.01);
+    transition: transform 220ms ease, box-shadow 220ms ease;
+    box-shadow:
+      0 25px 90px rgba(0, 0, 0, 0.18),
+      0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  .accent-bar {
+    height: 3px;
+    background: var(--accent);
+    border-radius: 9999px;
+  }
+
+  .btn-ghost {
+    background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+    color: var(--text);
+  }
+
+  .btn-ghost:hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+    color: var(--text);
+    box-shadow: 0 10px 40px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
