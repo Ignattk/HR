@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const apiRouter = require("./routes/api");
 const connectMongo = require("./config/mongo");
+const { startEmailService } = require("./services/emailService");
 
 const app = express();
 // Serve uploaded CVs
@@ -36,4 +37,9 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  try {
+    startEmailService();
+  } catch (err) {
+    console.error("Email worker failed to start:", err?.message || err);
+  }
 });

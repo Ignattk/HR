@@ -22,6 +22,7 @@ const App = () => {
   const [isDark, setIsDark] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastSync, setLastSync] = useState(null);
 
   // Fetch jobs and candidates on mount
   useEffect(() => {
@@ -44,6 +45,7 @@ const App = () => {
         if (transformedJobs.length > 0 && !selectedJobId) {
           setSelectedJobId(transformedJobs[0].id);
         }
+        setLastSync(new Date());
       } catch (err) {
         console.error("Error fetching data:", err);
         setError(err.message || "Failed to load data");
@@ -68,10 +70,19 @@ const App = () => {
       const candidatesData = await getAllCandidates();
       const transformedCandidates = candidatesData.map(transformCandidate);
       setCandidates(transformedCandidates);
+      setLastSync(new Date());
     } catch (err) {
       console.error("Error refreshing candidates:", err);
     }
   };
+
+  // Auto-refresh candidates every 60s to reflect email sync
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshCandidates();
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredCandidates = candidates
     .filter((c) => c.jobId === selectedJobId)
@@ -177,6 +188,14 @@ const App = () => {
                   {error}
                 </div>
               )}
+              <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/50 text-emerald-400 text-sm">
+                Авто-синхронизация с почтой активна
+                {lastSync && (
+                  <span className="ml-2 text-[var(--muted)]">
+                    · обновлено {lastSync.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => setIsDark((prev) => !prev)}
                 className="px-3 py-1.5 text-sm rounded-lg btn-ghost ml-auto"
