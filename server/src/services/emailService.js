@@ -35,11 +35,19 @@ const getMailTransport = () => {
     return null;
   }
   mailTransport = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 10_000,
   });
   return mailTransport;
 };
@@ -95,12 +103,19 @@ const sendStatusEmail = async (candidateEmail, status, candidateName) => {
     isInterview ? "Interview" : "Rejected"
   );
 
-  await transport.sendMail({
-    from: process.env.EMAIL_USER,
-    to: candidateEmail,
-    subject,
-    html,
-  });
+  console.log("Попытка отправки письма на:", candidateEmail);
+
+  try {
+    await transport.sendMail({
+      from: process.env.EMAIL_USER,
+      to: candidateEmail,
+      subject,
+      html,
+    });
+  } catch (err) {
+    console.error("Ошибка отправки письма nodemailer:", err);
+    throw err;
+  }
 };
 const ensureInboxJob = async () => {
   const normalizedTitle = INBOX_JOB_TITLE.trim().toLowerCase();
