@@ -4,6 +4,7 @@ const { scoreCV } = require("../utils/ai");
 const parseCV = require("../utils/parseCV");
 const path = require("path");
 const fs = require("fs");
+const { sendStatusEmail } = require("../services/emailService");
 
 // POST /candidates/upload
 exports.uploadCandidate = async (req, res) => {
@@ -78,6 +79,37 @@ exports.updateCandidateStage = async (req, res) => {
     );
     if (!candidate)
       return res.status(404).json({ error: "Candidate not found" });
+    res.json(candidate);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PATCH /candidates/:id/status - update stage and notify candidate
+exports.updateCandidateStatusAndNotify = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stage } = req.body;
+    if (!["DRAFT", "INTERVIEW", "REJECTED"].includes(stage)) {
+      return res.status(400).json({ error: "Invalid stage" });
+    }
+
+    const candidate = await Candidate.findByIdAndUpdate(
+      id,
+      { stage },
+      { new: true }
+    );
+    if (!candidate) {
+      return res.status(404).json({ error: "Candidate not found" });
+    }
+
+    try {
+      await sendStatusEmail(candidate.email, stage, candidate.name);
+    } catch (notifyErr) {
+      console.error("Failed to send status email:", notifyErr);
+      // Do not fail the main request because of email issues
+    }
+
     res.json(candidate);
   } catch (err) {
     res.status(500).json({ error: err.message });

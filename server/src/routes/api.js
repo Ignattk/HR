@@ -26,6 +26,10 @@ router.post(
 );
 router.post("/candidates/n8n", candidateController.createCandidateFromN8n);
 router.patch("/candidates/:id", candidateController.updateCandidateStage);
+router.patch(
+  "/candidates/:id/status",
+  candidateController.updateCandidateStatusAndNotify
+);
 router.delete("/candidates/:id", candidateController.deleteCandidate);
 router.get("/candidates/:id/cv", candidateController.downloadCV);
 

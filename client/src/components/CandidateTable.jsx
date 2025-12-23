@@ -87,6 +87,7 @@ const CandidateModal = ({ candidate, onClose }) => {
 
 const CandidateTable = ({ candidates, onUpdateStage }) => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [loadingAction, setLoadingAction] = useState({ id: null, stage: null });
   const stages = ["Draft", "Interview", "Rejected"];
 
   const getStageColor = (stage) => {
@@ -173,20 +174,33 @@ const CandidateTable = ({ candidates, onUpdateStage }) => {
               </td>
               <td className="px-4 py-3">
                 <div className="flex gap-1">
-                  {stages.map((stage) => (
-                    <button
-                      key={stage}
-                      onClick={() => onUpdateStage(candidate.id, stage)}
-                      disabled={candidate.stage === stage}
-                      className={`px-2.5 py-1 text-[11px] border rounded-md transition-colors ${
-                        candidate.stage === stage
-                          ? "bg-[color:var(--surface-2)] text-[var(--muted)] border-[color:var(--border)] cursor-not-allowed"
-                          : "btn-ghost hover:-translate-y-[1px]"
-                      }`}
-                    >
-                      {stage}
-                    </button>
-                  ))}
+                  {stages.map((stage) => {
+                    const isActive = candidate.stage === stage;
+                    const isLoading =
+                      loadingAction.id === candidate.id &&
+                      loadingAction.stage === stage;
+                    return (
+                      <button
+                        key={stage}
+                        onClick={async () => {
+                          try {
+                            setLoadingAction({ id: candidate.id, stage });
+                            await onUpdateStage(candidate.id, stage);
+                          } finally {
+                            setLoadingAction({ id: null, stage: null });
+                          }
+                        }}
+                        disabled={isActive || isLoading}
+                        className={`px-2.5 py-1 text-[11px] border rounded-md transition-colors ${
+                          isActive
+                            ? "bg-[color:var(--surface-2)] text-[var(--muted)] border-[color:var(--border)] cursor-not-allowed"
+                            : "btn-ghost hover:-translate-y-[1px]"
+                        }`}
+                      >
+                        {isLoading ? "Loading..." : stage}
+                      </button>
+                    );
+                  })}
                 </div>
               </td>
             </tr>

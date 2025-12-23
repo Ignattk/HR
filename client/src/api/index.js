@@ -54,7 +54,7 @@ export const getCandidatesByJob = async (jobId) => {
   }
 };
 
-export const updateCandidateStage = async (candidateId, stage) => {
+export const updateCandidateStatus = async (candidateId, stage) => {
   try {
     // Transform frontend stage format to backend format
     const stageMap = {
@@ -63,12 +63,12 @@ export const updateCandidateStage = async (candidateId, stage) => {
       Rejected: "REJECTED",
     };
     const backendStage = stageMap[stage] || stage.toUpperCase();
-    const response = await api.patch(`/candidates/${candidateId}`, {
+    const response = await api.patch(`/candidates/${candidateId}/status`, {
       stage: backendStage,
     });
     return response.data;
   } catch (error) {
-    handleApiError("updateCandidateStage", error);
+    handleApiError("updateCandidateStatus", error);
   }
 };
 

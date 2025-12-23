@@ -1,6 +1,7 @@
 const { ImapFlow } = require("imapflow");
 const { simpleParser } = require("mailparser");
 const pdfParse = require("pdf-parse");
+const nodemailer = require("nodemailer");
 const Candidate = require("../models/Candidate");
 const Job = require("../models/Job");
 
@@ -25,6 +26,82 @@ const DEFAULT_CREATED_BY =
 
 const log = (...args) => console.log("[email-worker]", ...args);
 
+// Nodemailer transport (Gmail)
+let mailTransport = null;
+const getMailTransport = () => {
+  if (mailTransport) return mailTransport;
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    log("EMAIL_USER/EMAIL_PASS не заданы, почтовые уведомления не работают");
+    return null;
+  }
+  mailTransport = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+  return mailTransport;
+};
+
+const renderEmailHtml = (name, status) => {
+  const baseStyles =
+    "font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; line-height: 1.6;";
+
+  if (status === "Interview") {
+    return `
+      <div style="${baseStyles} background: #f8fafc; padding: 24px;">
+        <div style="max-width: 640px; margin: 0 auto; background: white; border-radius: 16px; padding: 28px; border: 1px solid #e2e8f0; box-shadow: 0 12px 30px rgba(15,23,42,0.08);">
+          <h2 style="margin: 0 0 12px; color: #0f172a;">${
+            name || "Коллега"
+          }, приглашаем на интервью</h2>
+          <p style="margin: 0 0 12px; color: #334155;">Спасибо за интерес к нашей вакансии. Мы внимательно изучили ваше резюме и хотели бы пригласить вас на интервью.</p>
+          <p style="margin: 0 0 12px; color: #334155;">Пожалуйста, ответьте на это письмо и предложите 2-3 удобных слота времени. Мы подтвердим встречу и вышлем детали созвона.</p>
+          <div style="margin-top: 20px; padding: 16px; background: #ecfeff; border: 1px solid #06b6d4; border-radius: 12px; color: #0f172a;">
+            <strong>Следующие шаги:</strong>
+            <ul style="margin: 8px 0 0 18px; padding: 0; color: #0f172a;">
+              <li>Выберите время для интервью</li>
+              <li>Подготовьте примеры проектов/результатов</li>
+              <li>Сообщите, если нужен другой часовой пояс</li>
+            </ul>
+          </div>
+          <p style="margin: 20px 0 0; color: #334155;">С уважением,<br/>HR-команда</p>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div style="${baseStyles} background: #f8fafc; padding: 24px;">
+      <div style="max-width: 640px; margin: 0 auto; background: white; border-radius: 16px; padding: 28px; border: 1px solid #e2e8f0; box-shadow: 0 12px 30px rgba(15,23,42,0.08);">
+        <h2 style="margin: 0 0 12px; color: #0f172a;">${
+          name || "Коллега"
+        }, спасибо за интерес</h2>
+        <p style="margin: 0 0 12px; color: #334155;">Мы внимательно рассмотрели ваше резюме. К сожалению, мы решили продолжить процесс с другими кандидатами, ближе соответствующими текущим требованиям.</p>
+        <p style="margin: 0 0 12px; color: #334155;">Мы сохраним ваше резюме и свяжемся с вами, если появится подходящая роль.</p>
+        <p style="margin: 20px 0 0; color: #334155;">С уважением,<br/>HR-команда</p>
+      </div>
+    </div>`;
+};
+
+const sendStatusEmail = async (candidateEmail, status, candidateName) => {
+  const transport = getMailTransport();
+  if (!transport) return;
+  const isInterview = status === "Interview" || status === "INTERVIEW";
+  const subject = isInterview
+    ? "Приглашение на интервью"
+    : "Ответ по вашей вакансии";
+  const html = renderEmailHtml(
+    candidateName,
+    isInterview ? "Interview" : "Rejected"
+  );
+
+  await transport.sendMail({
+    from: process.env.EMAIL_USER,
+    to: candidateEmail,
+    subject,
+    html,
+  });
+};
 const ensureInboxJob = async () => {
   const normalizedTitle = INBOX_JOB_TITLE.trim().toLowerCase();
   let job = await Job.findOne({ normalizedTitle });
@@ -243,4 +320,4 @@ const startEmailService = () => {
   setInterval(tick, 60_000);
 };
 
-module.exports = { startEmailService };
+module.exports = { startEmailService, sendStatusEmail };

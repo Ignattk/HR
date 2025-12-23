@@ -7,7 +7,7 @@ import {
   getJobs,
   createJob as createJobAPI,
   getAllCandidates,
-  updateCandidateStage as updateCandidateStageAPI,
+  updateCandidateStatus as updateCandidateStatusAPI,
   transformJob,
   transformCandidate,
 } from "./api";
@@ -124,7 +124,7 @@ const App = () => {
   const handleUpdateStage = async (candidateId, newStage) => {
     try {
       setError(null);
-      const updatedCandidate = await updateCandidateStageAPI(
+      const updatedCandidate = await updateCandidateStatusAPI(
         candidateId,
         newStage
       );
@@ -134,6 +134,7 @@ const App = () => {
           c.id === candidateId ? transformedCandidate : c
         )
       );
+      alert("Уведомление отправлено кандидату!");
     } catch (err) {
       console.error("Error updating candidate stage:", err);
       setError(err.response?.data?.error || err.message || "Failed to update candidate stage");
