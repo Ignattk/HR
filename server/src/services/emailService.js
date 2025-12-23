@@ -68,9 +68,10 @@ ${text}`;
   }
 
   try {
-    const model = gemini.getGenerativeModel({ model: "gemini-pro" });
+    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(prompt);
-    const raw = result.response.text().trim();
+    let raw = result.response.text().trim();
+    raw = raw.replace(/```json|```/gi, "").trim(); // strip markdown fences if present
     const jsonString = raw.match(/\{[\s\S]*\}/)?.[0] || raw;
     return JSON.parse(jsonString);
   } catch (err) {
